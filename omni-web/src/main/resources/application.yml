@@ -1,0 +1,141 @@
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  profiles:
+    active: dev
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    mapper:
+      accept-case-insensitive-properties: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username:  munjie@qq.com
+    password: wxabmyvdriadbegd
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+server:
+  port: 8090
+
+mybatis-plus:
+  #MyBatis 别名包扫描路径，通过该属性可以给包中的类注册别名，多个路径用逗号分割
+  global-config:
+    db-config:
+      logic-delete-field: deleted  # 全局逻辑删除的实体字段名(since 3.3.0,配置后可以忽略不配置步骤2)
+      logic-delete-value: true # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: false # 逻辑未删除值(默认为 0)
+      logic-delete-enable: false # 禁用逻辑删除（默认 true）
+      id-type: auto
+  #      column-format: "\"%s\""
+  #      capital-mode: false
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+## 日志配置
+#logging:
+##  level:
+##    com.munjie: debug
+##    org.springframework: warn
+#  config: classpath:log899894j2.xml
+
+
+
+system:
+  email: munjie@163.com
+  toEmail: 892790756@qq.com
+
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**' #默认扫描全部的接口
+      packages-to-scan: munjie.com.blog.controller  #不加会默认扫描全部的包
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# application.properties 配置文件  多模块配置
+
+jt:
+  secret: my-super-secret-key-1234567890abcdef
+  expire: 86400   # 秒
+
+# src/main/resources/application.yml
+edgefn:
+  api-key: sk-iByMOL9Ju4ldrXlTBc689aFfF5934331A53081A594856270
+  deepseek-key: sk-44aba12669f64f0f9fce0fda12273e05
+  github-key: sk-IaxvBkk0RCJnjg9UlmhnEIoqwDjxqWyfdvkmeDWCXTiK7a1N
+  google-gni-key: AIzaSyB8Nv1hpKFY1ldZtV054fzenjSIGkgRtA8
+
+
+wx:
+  appId: wx4da1fa13a39b175d
+  appSecret: ab0902571e2169f12bbfab56d2a794b0
+  # 认证配置
+  auth:
+    grant-type: client_credential
+    appid: wx7029b913aa5a02c5
+    secret: 9418d1614826a92cf09712d4f4b177e4
+    token-url: https://api.weixin.qq.com/cgi-bin/token
+
+  # 模板消息配置
+  template:
+    send-url: https://api.weixin.qq.com/cgi-bin/message/template/send
+    template-id: bk5kt2tsxsk4H8Xu8kyygdeACvhD9wqYBlTEjb8jk0c
+
+
+wechat:
+  mini:
+    appid: wx3937f68ee342ae5c
+    secret: 30642c3eb4e5dfc19e94ca7a0eb65a1a
+
+
+
+
+
+tavily:
+  api-key: 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
+  max-results: 2
+
+serper:
+  api-key: 59f65fb4ff19799c22c3d6d133cfb413bbaebac1
+
+ip2region:
+  db-path: ip2region_v4.xdb  # 可根据需要替换为 IPv6 文件路径
+  version: IPv4
+
+
+wxgzh:
+  appId: wx87d901f0bb6303db
+  appSecret: 3dc58c0b4bb64aa8ab533cef818b775f
+
+
+wxgzh_test:
+  appId: wx7029b913aa5a02c5
+  appSecret: 9418d1614826a92cf09712d4f4b177e4
+
+
+cert:
+  expire-time: 2026-07-21 16:16:06
+

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+
+    <!-- 定义日志文件存放路径及大小 -->
+    <property name="LOG_PATH" value="./logs" />
+    <property name="APP_NAME" value="omni-platform" />
+
+    <!-- 1. 标准控制台输出（开发环境使用，生产环境可关闭以提升性能） -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 2. 基础文件输出 (FILE) - 负责滚动和压缩 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>15</maxHistory>
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
+
+        <!-- 极简、高性能的默认 JSON 编码器，内部已经自动包含了时间戳、级别、MDC、线程等 -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdc>true</includeMdc> <!-- 确保链路追踪的 traceId 自动输出 -->
+            <customFields>{"service":"${APP_NAME}"}</customFields> <!-- 这样追加静态服务名标签 -->
+        </encoder>
+    </appender>
+    <!-- 3. 【核心】高性能异步 Appender (ASYNC) -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 绑定真实的物理文件写 Appender -->
+        <appender-ref ref="FILE" />
+        <!-- 队列无空闲位置时，不丢失 INFO 级及以上日志。若设为 0，则队列满时全阻塞 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 内存阻塞队列深度，默认 256。高并发场景下建议调大，如 2048 或 4096 -->
+        <queueSize>2048</queueSize>
+        <!-- 如果在队列满时不想阻塞主线程，可以设置为 true（会丢弃日志，需权衡） -->
+        <neverBlock>false</neverBlock>
+        <!-- 保持调用者数据（如行号、方法名），关闭它可以显著提升处理速度（+30% 性能） -->
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <!-- 4. 环境配置：生产环境只开启异步文件日志 -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_FILE" />
+        </root>
+    </springProfile>
+
+    <!-- 开发/测试环境同时开启控制台和异步文件 -->
+    <springProfile name="dev,test">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="ASYNC_FILE" />
+        </root>
+    </springProfile>
+
+</configuration>

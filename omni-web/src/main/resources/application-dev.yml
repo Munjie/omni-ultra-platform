@@ -1,0 +1,96 @@
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+spring:
+  datasource:
+    url: jdbc:mysql://124.223.164.197:3306/blog?allowMultiQueries=true&useUnicode=true&rewriteBatchedStatements=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: mwj
+    password: Mwj.2329336
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      auto-commit: true # 空闲连接存活最大时间(毫秒)。
+      connection-test-query: SELECT 1 # 数据库连接测试
+      maximum-pool-size: 20  # 连接池最大连接数，默认和minimum-idle相等，连接越多对性能影响越大
+      minimum-idle: 5 # 连接池最小空闲连接，默认值与maximum-pool-size相等。
+      connection-timeout: 600000 # 连接超时时间(毫秒)
+      idle-timeout: 300000 # 空闲连接存活最大时间(毫秒)。 idle-timeout 要小于 max-lifetime
+      max-lifetime: 120000 # 池中连接最长生命周期。默认为 1800000，如果不等于 0 且小于 30 秒则会被重置回 30 分钟。强烈建议设置这个参数。
+  data:
+    redis:
+      database: 1
+      host: 124.223.164.197
+      password: Mwj.2329336
+      port: 26379
+      timeout: 30s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 20
+          max-idle: 10
+          min-idle: 2
+          max-wait: 10s
+
+
+
+filePath: C:\Users\muwne\Desktop\ReverseProxy_windows_amd64.zip
+
+
+#百度地图算路配置
+baidu:
+  originAdd: 无锡江阴市亚包大道199号
+  key: ihobW2ZNw3i96MOadGGRx2BN7pjxX3bQ
+  geocoding: https://api.map.baidu.com/geocoding/v3/?address=
+  routematrix: https://api.map.baidu.com/routematrix/v2/driving
+  logisticsRoutematrix: https://api.map.baidu.com/logistics_routematrix/v1/truck
+
+# 服务器配置
+sftp:
+  host: 139.196.240.81
+  port: 22
+  username: root
+  password: Mwj.2329336
+  remote-directory: /opt/images
+  base-url: https://www.munjie.com/images/
+
+jwt:
+  secret: my-super-secret-key-1234567890abcdef  # JWT签名密钥
+  expiration: 36000
+
+github:
+  clientId: Ov23li0M3hbMSpySq6nT
+  secrets: 311f9c6af033aeb6fd381ad9d50f5135b6d2599a
+  redirect-uri: http://localhost:8090/system/github-code
+  auth-url:  https://github.com/login/oauth/authorize
+  token-url: https://github.com/login/oauth/access_token
+  user-url: https://api.github.com/user
+
+
+blog:
+  url: http://localhost:3000
+  log: C:/blog_web_server/server-logs/error.log
+
+
+
+
+gitee:
+  client-id: 69832979e2d738af434d42188182d93dc49d05fbb2a13902a5db9d93cd437cc6
+  client-secret: 61f276c75cd8708a0a37ce63d0df5b09f98828174dae5a6d2687b40523fa7baf
+  redirect-uri: http://localhost:8090/system/gitee/callback
+  auth-url: https://gitee.com/oauth/authorize
+  token-url: https://gitee.com/oauth/token
+  user-url: https://gitee.com/api/v5/user
+
+
+
+qq:
+  client-id: 102825669
+  client-secret: DNVVK7rkS9oRq9PY
+  redirect-uri: https://www.munjie.com/api/system/qq/callback
+  auth-url: https://graph.qq.com/oauth2.0/authorize
+  token-url: https://graph.qq.com/oauth2.0/token
+  openid-url: https://graph.qq.com/oauth2.0/me
+  user-url: https://graph.qq.com/user/get_user_info
+
+
+acme:
+  url: acme://letsencrypt.org/staging
