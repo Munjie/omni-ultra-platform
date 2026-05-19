@@ -37,6 +37,7 @@
         <logstash.version>7.4</logstash.version>
         <commons-pool2.version>2.13.1</commons-pool2.version>
         <httpclient.version>4.5.13</httpclient.version>
+        <easyexcel.version>3.2.1</easyexcel.version>
     </properties>
 
     <dependencyManagement>
@@ -156,6 +157,12 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-validation</artifactId>
                 <version>${spring-boot.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>easyexcel</artifactId>
+                <version>${easyexcel.version}</version>
             </dependency>
 
 
