@@ -109,6 +109,10 @@ wechat:
   mini:
     appid: wx3937f68ee342ae5c
     secret: 30642c3eb4e5dfc19e94ca7a0eb65a1a
+    token_url: https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=%s&secret=%s
+    access_token_url: https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=%s
+    openid_url: https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code
+    default_avatar: https://www.munjie.com/images/565d3e4d-0559-4a2f-8799-5f96a8f73e77.png
 
 
 
