@@ -65,8 +65,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AuthServiceImpl implements AuthService {
 
-    private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
-    private static final String USER_API_URL = "https://api.github.com/user";
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -126,13 +124,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${qq.user-url}")
     private String qqUserUrl;
-
-    @Value("${spring.profiles.active}")
-    private String activeProfile;
-
-
-    @Value("${sftp.base-url}")
-    private String imageBaseUrl;
 
     @Value("${github.clientId}")
     private String githubClientId;
@@ -531,7 +522,7 @@ public class AuthServiceImpl implements AuthService {
             System.out.println("code = " + code);
             String accessToken = getHubToken(code);
             System.out.println("accessToken = " + accessToken);
-            String userInfo = getUserInfoByToken(accessToken, USER_API_URL);
+            String userInfo = getUserInfoByToken(accessToken, githubUserUrl);
             System.out.println("userInfo = " + userInfo);
             SysUserEntity user = parseUser(userInfo);
             String redirectUrl = blogUrl;
@@ -567,7 +558,7 @@ public class AuthServiceImpl implements AuthService {
 
     public String getHubToken(String code) throws Exception {
         try (CloseableHttpClient httpClient = httpUtil.createHttpClient()) {
-            HttpPost postRequest = new HttpPost(TOKEN_URL);
+            HttpPost postRequest = new HttpPost(githubTokenUrl);
             postRequest.setConfig(httpUtil.getRequestConfig());
             postRequest.setHeader("Content-Type", "application/x-www-form-urlencoded");
             postRequest.setHeader("Accept", "application/json");
