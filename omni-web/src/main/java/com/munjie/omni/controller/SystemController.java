@@ -1,15 +1,16 @@
 package com.munjie.omni.controller;
 
 import com.munjie.omni.pojo.entity.SysMenuItemEntity;
+import com.munjie.omni.service.AuthService;
 import com.munjie.omni.service.SysMenuItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.List;
 
@@ -29,8 +30,8 @@ public class SystemController {
     @Resource
     private SysMenuItemService menuItemService;
 
-
-
+    @Resource
+    private AuthService authService;
 
 
 
@@ -40,6 +41,30 @@ public class SystemController {
     public List<SysMenuItemEntity> listMenuById(@PathVariable("userId") Integer userId) {
         return menuItemService.listMenuById(userId);
     }
+
+    @GetMapping("/gitee/callback")
+    public RedirectView giteeCallback(String code, String state) {
+        return authService.giteeCallback(code, state);
+    }
+
+    @GetMapping("/qq/callback")
+    public RedirectView qqCallback(String code, String state) {
+        return authService.qqCallback(code, state);
+    }
+
+    @GetMapping(value = "/github-code")
+    public RedirectView getGitHubToken(String code, String state, HttpServletResponse response)  {
+        return  authService.gitHubLogin(code,state,response);
+    }
+
+
+
+    @GetMapping("/auth/{platform}")
+    public RedirectView loginAuth(@PathVariable String platform, @RequestParam(required = false, defaultValue = "/") String redirect, HttpServletRequest request) {
+        return authService.loginAuth(platform, redirect, request);
+
+    }
+
 
 
 

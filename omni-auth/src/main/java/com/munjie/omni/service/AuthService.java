@@ -3,7 +3,10 @@ package com.munjie.omni.service;
 import com.munjie.omni.pojo.dto.LoginReqDTO;
 import com.munjie.omni.pojo.entity.SysUserEntity;
 import com.munjie.omni.pojo.vo.LoginResVO;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.Map;
 
@@ -67,5 +70,39 @@ public interface AuthService {
      * @return
      */
     String logout();
+
+    /**
+     * gitee登录回调
+     * @param code
+     * @param state
+     * @return
+     */
+    RedirectView giteeCallback(String code, String state);
+
+    /**
+     * qq登录回调
+     * @param code
+     * @param state
+     * @return
+     */
+    RedirectView qqCallback(String code, String state);
+
+
+    /**
+     * github登录回调
+     * @param code
+     * @param state
+     * @return
+     */
+    RedirectView gitHubLogin(String code, String state, HttpServletResponse response);
+
+    /**
+     * 统一登录
+     * @param platform
+     * @param redirect
+     * @param request
+     * @return
+     */
+    RedirectView loginAuth(String platform, String redirect, HttpServletRequest request);
 
 }

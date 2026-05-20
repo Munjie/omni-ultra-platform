@@ -59,7 +59,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-ui/**", "/favicon.ico", "/**/*.json", "/**/*.ico").permitAll()
-                        .requestMatchers("/auth/**","/ws/**").permitAll()
+                        .requestMatchers("/auth/**","/ws/**","/system/auth/qq").permitAll()
                         .requestMatchers("/chat/**","/article/**", "/completions/**", "/upload/**", "/.well-known/**").permitAll()
                         .requestMatchers("/create-score-task", "/export-report", "/download/**", "/appspecific").permitAll()
                         .anyRequest().authenticated()

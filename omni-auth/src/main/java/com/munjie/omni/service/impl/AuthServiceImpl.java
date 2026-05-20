@@ -7,6 +7,9 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.munjie.omni.config.WechatSocketHandler;
 import com.munjie.omni.infr.JwtTokenProvider;
 import com.munjie.omni.pojo.dto.LoginReqDTO;
@@ -15,8 +18,22 @@ import com.munjie.omni.pojo.vo.LoginResVO;
 import com.munjie.omni.service.AuthService;
 import com.munjie.omni.service.SysUserService;
 import com.munjie.omni.utils.CustomHttpUtil;
+import com.munjie.omni.utils.LoginHttpUtil;
+import io.netty.channel.ConnectTimeoutException;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -29,7 +46,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.SocketTimeoutException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -40,6 +64,11 @@ import java.util.concurrent.TimeUnit;
 @Service
 @Slf4j
 public class AuthServiceImpl implements AuthService {
+
+    private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
+    private static final String USER_API_URL = "https://api.github.com/user";
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${wechat.mini.appid}")
     private String appid;
@@ -58,6 +87,72 @@ public class AuthServiceImpl implements AuthService {
     @Value("${wechat.mini.default_avatar}")
     private String defaultAvatar;
 
+    @Value("${gitee.client-id}")
+    private String giteeClientId;
+
+    @Value("${gitee.client-secret}")
+    private String giteeClientSecret;
+
+    @Value("${gitee.redirect-uri}")
+    private String giteeRedirectUri;
+
+    @Value("${gitee.auth-url}")
+    private String giteeAuthUrl;
+
+    @Value("${gitee.token-url}")
+    private String giteeTokenUrl;
+
+    @Value("${gitee.user-url}")
+    private String giteeUserUrl;
+
+
+    @Value("${qq.auth-url}")
+    private String qqAuthUrl;
+
+    @Value("${qq.client-id}")
+    private String qqClientId;
+
+    @Value("${qq.client-secret}")
+    private String qqClientSecret;
+
+    @Value("${qq.redirect-uri}")
+    private String qqRedirectUri;
+
+    @Value("${qq.token-url}")
+    private String qqTokenUrl;
+
+    @Value("${qq.openid-url}")
+    private String qqOpenIdUrl;
+
+    @Value("${qq.user-url}")
+    private String qqUserUrl;
+
+    @Value("${spring.profiles.active}")
+    private String activeProfile;
+
+
+    @Value("${sftp.base-url}")
+    private String imageBaseUrl;
+
+    @Value("${github.clientId}")
+    private String githubClientId;
+
+    @Value("${github.secrets}")
+    private String secrets;
+
+    @Value("${github.auth-url}")
+    private String githubAuthUrl;
+
+    @Value("${github.token-url}")
+    private String githubTokenUrl;
+
+    @Value("${github.user-url}")
+    private String githubUserUrl;
+
+
+    @Value("${blog.url}")
+    private String blogUrl;
+
     @Resource
     private RedisTemplate<String, String> redisTemplate;
 
@@ -73,6 +168,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private LoginHttpUtil httpUtil;
 
 
     @Override
@@ -237,5 +335,321 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         return "登出成功";
+    }
+
+    @Override
+    public RedirectView giteeCallback(String code, String state) {
+        try {
+            System.out.println("gitee/callback code = " + code);
+            String tokenResponse = getGiteeAccessToken(code);
+            JsonNode rootNode = objectMapper.readTree(tokenResponse);
+            String accessToken = rootNode.get("access_token").asText();
+            String userResponse = getUserInfoByToken(accessToken, giteeUserUrl);
+            SysUserEntity user = parseUser(userResponse);
+            String redirectUrl = blogUrl;
+            if (user != null) {
+                user = sysUserService.getOrCreateUser(user);
+                String token = jwtTokenProvider.createToken(user.getId(), user.getUserName(), 86400);
+                redirectUrl = UriComponentsBuilder.fromHttpUrl(blogUrl + "/oauth/callback")
+                        .queryParam("token", token)
+                        .queryParam("userId", user.getId())
+                        .queryParam("username", user.getUserName())
+                        .queryParam("avatar", user.getAvatar())
+                        .queryParam("state", state)
+                        .build().encode().toUriString();
+            }
+            return new RedirectView(redirectUrl);
+        } catch (Exception e) {
+            log.error("Gitee登录失败", e);
+            String errorMsg = e.getMessage();
+            if (e.getMessage().contains("access_denied")) {
+                errorMsg = "您取消了Gitee授权";
+            }
+            try {
+                String encodedMsg = URLEncoder.encode(errorMsg, StandardCharsets.UTF_8.toString());
+                return new RedirectView(blogUrl + "/login?error=" + encodedMsg);
+            } catch (UnsupportedEncodingException ex) {
+                return new RedirectView(blogUrl + "/login?error=auth_failed");
+            }
+
+        }
+    }
+
+
+    private String getGiteeAccessToken(String code) throws Exception {
+        try (CloseableHttpClient httpClient = httpUtil.createHttpClient()) {
+            HttpPost httpPost = new HttpPost(giteeTokenUrl);
+            httpPost.setConfig(httpUtil.getRequestConfig());
+            String requestBody = String.format("client_id=%s&client_secret=%s&code=%s&redirect_uri=%s&grant_type=authorization_code",
+                    URLEncoder.encode(giteeClientId, StandardCharsets.UTF_8),
+                    URLEncoder.encode(giteeClientSecret, StandardCharsets.UTF_8),
+                    URLEncoder.encode(code, StandardCharsets.UTF_8),
+                    URLEncoder.encode(giteeRedirectUri, StandardCharsets.UTF_8));
+            httpPost.setEntity(new StringEntity(requestBody, StandardCharsets.UTF_8));
+            httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
+            httpPost.setHeader("Accept", "application/json");
+            try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+            }
+        } catch (ConnectTimeoutException | SocketTimeoutException e) {
+            log.error("Gitee API 响应超时: {}", e.getMessage());
+            throw new RuntimeException("网络连接超时,请检查你的网络");
+        } catch (Exception e) {
+            log.error("获取 Gitee AccessToken 失败: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    private String getUserInfoByToken(String accessToken, String url) throws Exception {
+        try (CloseableHttpClient httpClient = httpUtil.createHttpClient()) {
+            HttpGet httpGet = new HttpGet(url);
+            httpGet.setHeader("Authorization", "token " + accessToken);
+            httpGet.setHeader("Accept", "application/json");
+            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+            }
+        }
+    }
+
+    public SysUserEntity parseUser(String rawJson) throws JsonProcessingException {
+        JsonNode rootNode = objectMapper.readTree(rawJson);
+        String username = rootNode.get("login").asText();
+        long id = rootNode.get("id").asLong();
+        String avatarUrl = rootNode.get("avatar_url").asText();
+        System.out.println("用户名: " + username);
+        System.out.println("ID: " + id);
+        System.out.println("头像地址: " + avatarUrl);
+        return SysUserEntity.builder().userName(username).avatar(avatarUrl).openid(String.valueOf(id)).build();
+    }
+
+    @Override
+    public RedirectView qqCallback(String code, String state) {
+        System.out.println("1. QQ Code = " + code);
+        String redirectUrl = blogUrl;
+        try {
+            String qqToken = getQQToken(code);
+            JSONObject qqOpenId = getQQOpenId(qqToken);
+            String consumerKey = qqOpenId.getString("client_id");
+            String openid = qqOpenId.getString("openid");
+            JSONObject userRealInfo =getQQUserInfo(qqToken,consumerKey,openid);
+            SysUserEntity user = SysUserEntity.builder().build();
+            user.setOpenid(openid);
+            user.setUserName(userRealInfo.getString("nickname"));
+            user.setAvatar(userRealInfo.getString("figureurl_qq"));
+            if (StrUtil.isNotBlank(user.getOpenid())) {
+                user = sysUserService.getOrCreateUser(user);
+                String token = jwtTokenProvider.createToken(user.getId(), user.getUserName(), 86400);
+                redirectUrl = UriComponentsBuilder.fromHttpUrl(blogUrl + "/oauth/callback")
+                        .queryParam("token", token)
+                        .queryParam("userId", user.getId())
+                        .queryParam("username", user.getUserName())
+                        .queryParam("avatar", user.getAvatar())
+                        .queryParam("state", state)
+                        .build().encode().toUriString();
+            }
+
+            return new RedirectView(redirectUrl);
+        } catch (Exception e) {
+            log.error("QQ登录失败", e);
+            String errorMsg = e.getMessage();
+            if (e.getMessage().contains("access_denied")) {
+                errorMsg = "您取消了QQ授权";
+            }
+            try {
+                String encodedMsg = URLEncoder.encode(errorMsg, StandardCharsets.UTF_8.toString());
+                return new RedirectView(blogUrl + "/login?error=" + encodedMsg);
+            } catch (UnsupportedEncodingException ex) {
+                return new RedirectView(blogUrl + "/login?error=auth_failed");
+            }
+        }
+    }
+
+    private String getQQToken(String code) throws Exception {
+        String accessTaken="";
+        String url = String.format("%s?client_id=%s&client_secret=%s&code=%s&redirect_uri=%s&grant_type=authorization_code",
+                qqTokenUrl,
+                URLEncoder.encode(qqClientId, StandardCharsets.UTF_8),
+                URLEncoder.encode(qqClientSecret, StandardCharsets.UTF_8),
+                URLEncoder.encode(code, StandardCharsets.UTF_8),
+                URLEncoder.encode(qqRedirectUri, StandardCharsets.UTF_8));
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(url).build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                String responseString = response.body().string();
+                accessTaken = responseString.split("=")[1].split("&")[0];
+                System.out.println("QQ返回accessTaken="+accessTaken);
+            }
+        }
+        return accessTaken;
+
+    }
+
+
+    public JSONObject getQQOpenId(String accessToken) throws IOException {
+        JSONObject userInfo = new JSONObject();
+        String url = String.format("%s?access_token=%s",
+                qqOpenIdUrl,
+                accessToken);
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(url).build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                String UserInfoString = response.body().string().split(" ")[1];
+                userInfo = JSONObject.parseObject(UserInfoString);
+                System.out.println("QQ返回openid="+userInfo);
+            }
+        }
+        return userInfo;
+    }
+
+
+    public JSONObject getQQUserInfo(String accessToken , String consumerKey , String openid ) throws IOException {
+        JSONObject userRealInfo = new JSONObject();
+        String url = String.format("%s?access_token=%s&oauth_consumer_key=%s&openid=%s",
+                qqUserUrl,
+                accessToken,
+                consumerKey,
+                openid
+        );
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(url).build();
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                String UserRealInfoString = response.body().string();
+                userRealInfo = JSONObject.parseObject(UserRealInfoString);
+                System.out.println("QQ返回用户信息："+userRealInfo);
+            }
+        }
+        return userRealInfo;
+    }
+
+
+    @Override
+    public RedirectView gitHubLogin(String code, String state, HttpServletResponse response) {
+        try {
+            System.out.println("code = " + code);
+            String accessToken = getHubToken(code);
+            System.out.println("accessToken = " + accessToken);
+            String userInfo = getUserInfoByToken(accessToken, USER_API_URL);
+            System.out.println("userInfo = " + userInfo);
+            SysUserEntity user = parseUser(userInfo);
+            String redirectUrl = blogUrl;
+            if (user != null) {
+                user = sysUserService.getOrCreateUser(user);
+                String token = jwtTokenProvider.createToken(user.getId(), user.getUserName(), 86400);
+                redirectUrl = UriComponentsBuilder.fromHttpUrl(blogUrl + "/oauth/callback")
+                        .queryParam("token", token)
+                        .queryParam("userId", user.getId())
+                        .queryParam("username", user.getUserName())
+                        .queryParam("avatar", user.getAvatar())
+                        .queryParam("state", state)
+                        .build().encode().toUriString();
+            }
+            return new RedirectView(redirectUrl);
+        } catch (Exception e) {
+            log.error("GitHub登录失败", e);
+            String errorMsg = "GitHub登录失败，请稍后再试";
+//            String errorMsg = e.getMessage();
+            if (e.getMessage().contains("access_denied")) {
+                errorMsg = "您取消了授权";
+            }
+            try {
+                String encodedMsg = URLEncoder.encode(errorMsg, StandardCharsets.UTF_8.toString());
+                return new RedirectView(blogUrl + "/login?error=" + encodedMsg);
+            } catch (UnsupportedEncodingException ex) {
+                return new RedirectView(blogUrl + "/login?error=auth_failed");
+            }
+
+        }
+    }
+
+
+    public String getHubToken(String code) throws Exception {
+        try (CloseableHttpClient httpClient = httpUtil.createHttpClient()) {
+            HttpPost postRequest = new HttpPost(TOKEN_URL);
+            postRequest.setConfig(httpUtil.getRequestConfig());
+            postRequest.setHeader("Content-Type", "application/x-www-form-urlencoded");
+            postRequest.setHeader("Accept", "application/json");
+            postRequest.setHeader("User-Agent", "Java-HttpClient/munjie-blog");
+            StringEntity params = new StringEntity(
+                    "client_id=" + githubClientId +
+                            "&client_secret=" + secrets +
+                            "&code=" + code
+            );
+            postRequest.setEntity(params);
+            try (CloseableHttpResponse response = httpClient.execute(postRequest)) {
+                HttpEntity entity = response.getEntity();
+                String string = EntityUtils.toString(entity);
+                System.out.println("access_token = " + string);
+                return extractValue(string, "access_token");
+            }
+        }
+    }
+
+    private String extractValue(String json, String key) throws JsonProcessingException {
+        JsonNode root = objectMapper.readTree(json);
+        return root.path(key).asText();
+    }
+
+
+    @Override
+    public RedirectView loginAuth(String platform, String redirect, HttpServletRequest request) {
+        String authUrl = "";
+        switch (platform.toLowerCase()) {
+            case "github":
+                authUrl = String.format("%s?client_id=%s&state=%s",  githubAuthUrl, encode(githubClientId), encode(redirect));
+                break;
+            case "gitee":
+                if (!httpUtil.isReachable("https://gitee.com")) {
+                    return checkConnectResult(request, platform);
+                }
+                authUrl = String.format("%s?client_id=%s&redirect_uri=%s&scope=user_info&state=%s&response_type=code",
+                        giteeAuthUrl,
+                        encode(giteeClientId),
+                        encode(giteeRedirectUri),
+                        encode(redirect));
+                break;
+            case "qq":
+                authUrl = String.format("%s?client_id=%s&redirect_uri=%s&state=%s&response_type=code",
+                        qqAuthUrl,
+                        encode(qqClientId),
+                        encode(qqRedirectUri),
+                        encode(redirect));
+                break;
+            default:
+                return redirectToError(redirect, "不支持的登录方式");
+        }
+        return new RedirectView(authUrl);
+    }
+
+    public RedirectView checkConnectResult(HttpServletRequest request, String platform) {
+        log.error("后端服务器无法访问,{}", platform);
+        try {
+            String errorMsg = URLEncoder.encode("连接" + platform + "失败，请稍后重试", "UTF-8");
+            String redirectParam = request.getParameter("redirect");
+            String target = blogUrl + "/login?error=" + errorMsg;
+            if (redirectParam != null) {
+                target += "&redirect=" + URLEncoder.encode(redirectParam, "UTF-8");
+            }
+            return new RedirectView(target);
+        } catch (Exception e) {
+            return new RedirectView(blogUrl + "/login?error=network_error");
+        }
+    }
+
+
+    private RedirectView redirectToError(String redirect, String msg) {
+        String target = String.format("%s/login?error=%s&redirect=%s",
+                blogUrl, encode(msg), encode(redirect));
+        return new RedirectView(target);
+    }
+
+    private String encode(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return value;
+        }
     }
 }
