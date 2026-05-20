@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.munjie.omni.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -11,11 +12,12 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
+@Slf4j
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, 
-                         AuthenticationException authException) throws IOException {
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
+        log.error("💥 安全拦截触发！未授权的请求 URI: [{}], 请求方法: [{}], 错误原因: [{}]", request.getRequestURI(), request.getMethod(), authException.getMessage());
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         String json = JSON.toJSONString(Result.error(401, "登录已过期或Token无效，请重新登录"));

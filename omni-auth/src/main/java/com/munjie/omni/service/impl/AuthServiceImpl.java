@@ -9,7 +9,9 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.munjie.omni.config.WechatSocketHandler;
 import com.munjie.omni.infr.JwtTokenProvider;
+import com.munjie.omni.pojo.dto.LoginReqDTO;
 import com.munjie.omni.pojo.entity.SysUserEntity;
+import com.munjie.omni.pojo.vo.LoginResVO;
 import com.munjie.omni.service.AuthService;
 import com.munjie.omni.service.SysUserService;
 import com.munjie.omni.utils.CustomHttpUtil;
@@ -17,12 +19,19 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -57,6 +66,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Resource
     private JwtTokenProvider jwtTokenProvider;
+
+    @Resource
+    private PasswordEncoder passwordEncoder;
+
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
 
     @Override
@@ -181,5 +197,45 @@ public class AuthServiceImpl implements AuthService {
             user.setOpenid(openid);
         }
         return user;
+    }
+
+    @Override
+    public LoginResVO login(LoginReqDTO request) {
+        LambdaQueryWrapper<SysUserEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SysUserEntity::getUserName, request.getUsername());
+        SysUserEntity sysUser = sysUserService.getOne(wrapper);
+        if (sysUser == null || !passwordEncoder.matches(request.getPassword(), sysUser.getPassword())) {
+//            throw new CustomException("用户名或密码错误");
+        }
+        long expire = 86400; // 1天有效时间
+        String token = jwtTokenProvider.createToken(sysUser.getId(), sysUser.getUserName(), expire);
+        return LoginResVO.builder()
+                .userId(sysUser.getId())
+                .username(sysUser.getUserName())
+                .avatar(sysUser.getAvatar())
+                .token(token)
+                .expire(expire)
+                .build();
+    }
+
+    @Override
+    public String logout() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            String tokenValue = jwt.getTokenValue();
+            Instant expiresAt = jwt.getExpiresAt();
+            if (expiresAt != null) {
+                long remainingSeconds = ChronoUnit.SECONDS.between(Instant.now(), expiresAt);
+                if (remainingSeconds > 0) {
+                    stringRedisTemplate.opsForValue().set(
+                            "jwt:blacklist:" + tokenValue,
+                            "logout_status",
+                            remainingSeconds,
+                            TimeUnit.SECONDS
+                    );
+                }
+            }
+        }
+        return "登出成功";
     }
 }

@@ -7,13 +7,19 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
@@ -28,12 +34,16 @@ import java.util.UUID;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+
+    private final StringRedisTemplate redisTemplate;
+
     private final RSAPublicKey publicKey;
     private final RSAPrivateKey privateKey;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 
-    public SecurityConfig(CustomAuthenticationEntryPoint authenticationEntryPoint) throws Exception {
+    public SecurityConfig(CustomAuthenticationEntryPoint authenticationEntryPoint, StringRedisTemplate redisTemplate) throws Exception {
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.redisTemplate = redisTemplate;
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -44,21 +54,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(Customizer.withDefaults())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-ui/**", "/favicon.ico", "/**/*.json", "/**/*.ico").permitAll()
-                .requestMatchers("/wechat/**", "/qq/**", "/github/**", "/gitee/**", "/login/**", "/logout/**","/ws/**").permitAll()
-                .requestMatchers("/article/**",  "/completions/**", "/upload/**", "/.well-known/**").permitAll()
-                .requestMatchers("/create-score-task", "/export-report", "/download/**", "/appspecific").permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(Customizer.withDefaults())
-                .authenticationEntryPoint(authenticationEntryPoint)
-            )
-            .addFilterBefore(new UserContextFilter(), AuthorizationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-ui/**", "/favicon.ico", "/**/*.json", "/**/*.ico").permitAll()
+                        .requestMatchers("/auth/**","/ws/**").permitAll()
+                        .requestMatchers("/article/**", "/completions/**", "/upload/**", "/.well-known/**").permitAll()
+                        .requestMatchers("/create-score-task", "/export-report", "/download/**", "/appspecific").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(Customizer.withDefaults())
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                )
+                .addFilterBefore(new UserContextFilter(redisTemplate), AuthorizationFilter.class);
 
         return http.build();
     }
@@ -72,5 +82,10 @@ public class SecurityConfig {
     @Bean
     public JwtDecoder jwtDecoder() {
         return NimbusJwtDecoder.withPublicKey(this.publicKey).build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

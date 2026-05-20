@@ -1,8 +1,11 @@
 package com.munjie.omni.controller;
 
 
+import com.munjie.omni.pojo.dto.LoginReqDTO;
 import com.munjie.omni.pojo.entity.SysUserEntity;
+import com.munjie.omni.pojo.vo.LoginResVO;
 import com.munjie.omni.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/wechat")
+@RequestMapping("/auth")
 @Tag(name = "小程序登录API")
 @Slf4j
 public class AuthController {
@@ -27,7 +30,7 @@ public class AuthController {
         return authService.getQrCode();
     }
 
-    @GetMapping("/code2session")
+    @GetMapping("/get-open-id")
     public  Map<String, String> getOpenId(@RequestParam String code)  {
         return authService.getOpenId(code);
     }
@@ -45,9 +48,23 @@ public class AuthController {
     }
 
 
-    @GetMapping("/userInfo")
+    @GetMapping("/get-user-info")
     public SysUserEntity getUserbyCode(@RequestParam String code) {
         return authService.getUserbyCode(code);
+    }
+
+
+    @Operation(summary ="登录")
+    @PostMapping("/login")
+    public LoginResVO login(@RequestBody LoginReqDTO user) {
+        return authService.login(user);
+    }
+
+    @Operation(summary ="登出")
+    @GetMapping("/logout")
+    public String logout() {
+        return authService.logout();
+
     }
 
 
