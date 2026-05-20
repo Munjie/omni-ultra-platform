@@ -1,7 +1,12 @@
 package com.munjie.omni.service;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
+import com.munjie.omni.config.UserContext;
+import com.munjie.omni.constant.SystemConstant;
 import com.munjie.omni.infr.SerperSearchService;
 import com.munjie.omni.pojo.entity.AiModelInfoEntity;
+import com.munjie.omni.pojo.vo.AiModelInfoVO;
 import com.munjie.omni.strategy.AiStrategy;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
@@ -11,6 +16,7 @@ import jakarta.annotation.Resource;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,6 +36,10 @@ public class AiService {
 
     @Resource
     private SerperSearchService serperSearchService;
+
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
 
     private final Map<String, AiStrategy> strategies = new ConcurrentHashMap<>();
@@ -76,8 +86,32 @@ public class AiService {
         log.info("模型 {} 已注册", info.getModelValue());
     }
 
+    public List<AiModelInfoVO> allModel() {
+        List<AiModelInfoEntity> list = service.list();
+        List<AiModelInfoVO> res = new ArrayList<>();
+        if (CollUtil.isNotEmpty(list)) {
+            res = list.stream().map(m -> {
+                return AiModelInfoVO.builder().modelDesc(m.getModelDesc()).modelName(m.getModelName()).id(m.getId()).build();
+            }).toList();
+        }
+        return res;
+    }
 
-    public Flux<String> execute(Integer modelId, Map<String, Object> request) {
+    public void saveChat(Map<String, Object> request) {
+        String chat = request.getOrDefault("chat", "").toString();
+        Integer userId = UserContext.getUserId();
+        stringRedisTemplate.opsForValue().set(SystemConstant.USER_CHAT + userId, chat, Duration.ofDays(7));
+    }
+
+    public String getChatHistory() {
+        Integer userId = UserContext.getUserId();
+        String chat = stringRedisTemplate.opsForValue().get(SystemConstant.USER_CHAT + userId);
+        return StrUtil.isNotBlank(chat) ? chat : StrUtil.EMPTY;
+    }
+
+
+    public Flux<String> execute(Map<String, Object> request) {
+        Integer modelId = (Integer) request.getOrDefault("model", "DeepSeek-R1-0528-Qwen3-8B");
         ModelInstance instance = instances.get(modelId);
         if (instance == null) {
             return Flux.just(formatErrorJson("系统错误：当前模型未注册或已下线，请选择其他模型"));
