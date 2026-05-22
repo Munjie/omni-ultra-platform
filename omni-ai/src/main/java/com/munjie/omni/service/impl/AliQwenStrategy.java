@@ -55,6 +55,7 @@ public class AliQwenStrategy implements AiStrategy {
             requestMap.put("parameters", paramsMap);
         }
         String userMessage = extractUserMessage(request);
+//        Map<String, Object> userKnowledgeGraph = zepMemoryService.getUserKnowledgeGraph(userId);
         // 2. 串联响应式流：先向 Zep 投递用户话语 -> 再读取该用户的长期记忆摘要 -> 组装 Prompt 喂给阿里模型
         return zepMemoryService.addMessageToZep(userId, userMessage, "user")
                 .then(zepMemoryService.getMemoryFromZep(userId))
