@@ -6,8 +6,6 @@ import com.munjie.omni.pojo.vo.AiModelInfoVO;
 import com.munjie.omni.service.AiService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -22,10 +20,6 @@ public class AiController {
 
     @Resource
     private AiService aiService;
-
-
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
 
 
     @PostMapping(value = "/completions", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

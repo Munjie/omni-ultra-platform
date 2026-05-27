@@ -1,8 +1,10 @@
 package com.munjie.omni.controller;
 
+import com.munjie.omni.annotation.RateLimit;
 import com.munjie.omni.pojo.entity.SysMenuItemEntity;
 import com.munjie.omni.service.AuthService;
 import com.munjie.omni.service.SysMenuItemService;
+import com.munjie.omni.service.SystemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -10,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.List;
@@ -32,6 +35,10 @@ public class SystemController {
 
     @Resource
     private AuthService authService;
+
+    @Resource
+    private SystemService systemService;
+
 
 
 
@@ -63,6 +70,12 @@ public class SystemController {
     public RedirectView loginAuth(@PathVariable String platform, @RequestParam(required = false, defaultValue = "/") String redirect, HttpServletRequest request) {
         return authService.loginAuth(platform, redirect, request);
 
+    }
+
+    @PostMapping("/upload")
+    @RateLimit(limit = 100, duration = 60)
+    public String uploadFile(@RequestParam("file") MultipartFile file) {
+      return systemService.uploadFile(file);
     }
 
 
