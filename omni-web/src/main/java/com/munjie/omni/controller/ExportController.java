@@ -37,6 +37,7 @@ public class ExportController {
     @PostMapping("/export-report")
     public Result startExport(@RequestBody ExportRequestDTO requestDTO) {
         String businessId = String.valueOf(requestDTO.getTaskId());
+        System.out.println("开始执行导出 = " + businessId);
         String lockKey = "export_lock:" + businessId;
         // 1. 防重复提交锁 (10分钟自动过期)
         Boolean lock = redisTemplate.opsForValue().setIfAbsent(lockKey, "LOCKED", Duration.ofMinutes(10));
@@ -53,6 +54,7 @@ public class ExportController {
 
     @GetMapping("/export-progress/{exportJobId}")
     public ExportProgress getProgress(@PathVariable String exportJobId) {
+        System.out.println("请求exportJobId状态 = " + exportJobId);
         return (ExportProgress) redisTemplate.opsForValue().get("export_progress:" + exportJobId);
     }
 
@@ -60,6 +62,7 @@ public class ExportController {
     @PostMapping("/download-excel")
     @Operation(summary ="导出学生成绩质量分析")
     public ResponseEntity<ByteArrayResource> exportReport(HttpServletRequest request, @RequestBody ExportRequestDTO requestDTO) throws IOException {
+        System.out.println("开始下载excel= " + request);
        return downloadAll(requestDTO.getFilePath(),requestDTO.getTitle(),request);
 
     }

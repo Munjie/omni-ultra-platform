@@ -48,9 +48,6 @@ public class GeographyAnalysisService {
                 Map.of("role", "user", "content", prompt)
         )
         );
-     /*   Flux<String> execute = modelManager.execute(id, request);
-        System.out.println("execute = " + execute);*/
-        // 强制要求模型输出 JSON 格式（部分模型支持 response_format 参数）
         request.put("response_format", Map.of("type", "json_object"));
         request.put("temperature", 0.3); // 降低温度，让模型输出更理性的分析，减少幻觉
 
@@ -66,11 +63,9 @@ public class GeographyAnalysisService {
                                 Mono.error(new RuntimeException("API调用错误: " + body))
                         )
                 )
-                // 注意：这里改用 bodyToMono，因为我们需要一次性拿到完整的 JSON 来解析，而不是流式
                 .bodyToMono(String.class)
-                // 【关键点1】在解析前，先把大模型的原生 JSON 打印出来！
                 .doOnNext(rawBody -> log.info("========== 大模型原生返回内容: \n{} \n==========", rawBody))
-                .timeout(Duration.ofSeconds(45))// 分析任务耗时较长，强烈建议将超时设为45-60秒
+                .timeout(Duration.ofSeconds(45))
                 .map(this::parseJsonToResult)
                 .doOnError(e -> log.error("执行过程中发生异常: ", e));
         System.out.println("authorization = " + authorization);
@@ -81,7 +76,6 @@ public class GeographyAnalysisService {
      * 将收集到的变量替换到 Prompt 模板中
      */
     private String buildPrompt(Map<String, Object> data) {
-        // 这里简化演示，实际可以将你的 System.out.println 变量全部放进一个 Map 传过来
         return String.format("""
                         你现在是一名资深的初中地理教师兼教学教研专家。请根据以下某次地理考试的成绩真实统计数据，为我生成一份专业的“成绩质量分析报告”。
                         【考试统计数据】
@@ -126,17 +120,11 @@ public class GeographyAnalysisService {
      */
     private GeographyAnalysisResult parseJsonToResult(String responseBody) {
         try {
-            // 1. 从千问标准返回结构中提取 content (假设走的类似 OpenAI 格式)
-            // 实际可能需要根据阿里原生格式调整解析路径，比如 output.choices[0].message.content
             com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(responseBody);
             String content = rootNode.path("choices").get(0).path("message").path("content").asText();
-
-            // 2. 清理大模型可能不听话带上的 Markdown 代码块 (如 
-            // 2. 清理大模型可能不听话带上的 Markdown 代码块 (如 ```json ... ```)
             content = content.replaceAll("```json", "")
                     .replaceAll("```", "")
                     .trim();
-            // 3. 将干净的 JSON 字符串映射为 Java 实体
             return objectMapper.readValue(content, GeographyAnalysisResult.class);
         } catch (Exception e) {
             throw new RuntimeException("解析大模型返回结果失败: " + responseBody, e);
