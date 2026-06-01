@@ -6,54 +6,33 @@
         <artifactId>omni-ultra-platform</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <artifactId>omni-web</artifactId>
+    <artifactId>omni-analysis</artifactId>
     <packaging>jar</packaging>
-
 
     <dependencies>
         <dependency>
             <groupId>munjie.com</groupId>
             <artifactId>omni-common</artifactId>
         </dependency>
+
         <dependency>
             <groupId>munjie.com</groupId>
             <artifactId>omni-system</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>munjie.com</groupId>
-            <artifactId>omni-auth</artifactId>
         </dependency>
 
         <dependency>
             <groupId>munjie.com</groupId>
             <artifactId>omni-ai</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>munjie.com</groupId>
-            <artifactId>omni-analysis</artifactId>
-        </dependency>
-
     </dependencies>
-
-
-
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.3.4</version>
                 <configuration>
-                    <mainClass>com.munjie.omni.OmniUltraPlatformApplication</mainClass>
+                    <skip>true</skip>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
