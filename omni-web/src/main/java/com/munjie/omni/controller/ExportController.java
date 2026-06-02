@@ -76,16 +76,14 @@ public class ExportController {
                     agent.contains("FIREFOX") || agent.contains("SAFARI")) {
                 return "attachment; filename*=UTF-8''" +
                         URLEncoder.encode(filename, "UTF-8")
-                                .replaceAll("\\+", "%20");  // 关键！+号要换成 %20
+                                .replaceAll("\\+", "%20");
             }
             // 2. IE 或很老的浏览器：用普通 URL Encode
             if (agent.contains("MSIE") || agent.contains("TRIDENT")) {
                 return "attachment; filename=" + URLEncoder.encode(filename, "UTF-8").replaceAll("\\+", "%20");
             }
-
             // 3. 其他情况：都按现代浏览器处理
             return "attachment; filename*=UTF-8''" + URLEncoder.encode(filename, "UTF-8").replaceAll("\\+", "%20");
-
         } catch (Exception e) {
             return "attachment; filename=download.zip";
         }
