@@ -42,36 +42,32 @@ public class ScoreAnalysisService {
         Collections.sort(scores);
         double[] data = scores.stream().mapToDouble(Double::doubleValue).toArray();
 
-        // 使用 Apache Commons Math 的 Percentile 计算 Q1, Q2, Q3
         Percentile percentile = new Percentile();
         double q1 = percentile.evaluate(data, 25);
         double median = percentile.evaluate(data, 50); // Q2
         double q3 = percentile.evaluate(data, 75);
-
         // 计算 IQR (四分位距)
         double iqr = q3 - q1;
         // 计算箱须的上下限 (非异常值的边界)
         double lowerBound = q1 - 1.5 * iqr;
         double upperBound = q3 + 1.5 * iqr;
 
-        // 确定 Min/Max (箱须末端) 和 异常值
-        double minWhisker = scores.get(0); // 暂定为最小值
-        double maxWhisker = scores.get(scores.size() - 1); // 暂定为最大值
+        double minWhisker = scores.get(0);
+        double maxWhisker = scores.get(scores.size() - 1);
         List<Double> outliers = new ArrayList<>();
 
         for (double score : scores) {
             if (score < lowerBound || score > upperBound) {
-                outliers.add(score); // 记录异常值
+                outliers.add(score);
             }
         }
-        
-        // 找到箱须的实际 Min 和 Max (最靠近上下限且不在异常值范围内的值)
+
         for (double score : scores) {
             if (score >= lowerBound && score <= q1) {
-                minWhisker = score; // 最靠近 lowerBound 的值
+                minWhisker = score;
             }
             if (score <= upperBound && score >= q3) {
-                maxWhisker = score; // 最靠近 upperBound 的值
+                maxWhisker = score;
             }
         }
         
