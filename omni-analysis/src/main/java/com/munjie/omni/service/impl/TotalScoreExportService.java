@@ -21,8 +21,6 @@ public class TotalScoreExportService {
 
     public void exportScoreTip( List<TotalScoreEntity> studentScores) {
         String fileName = "score_sort.xlsx";
-
-        // Define header and content styles
         WriteCellStyle headerStyle = new WriteCellStyle();
         headerStyle.setBorderTop(BorderStyle.THIN);
         headerStyle.setBorderBottom(BorderStyle.THIN);
@@ -52,8 +50,6 @@ public class TotalScoreExportService {
                 allData.add(new ArrayList<>());
             }
         }
-
-        // Write all data to Excel with custom cell style
         EasyExcel.write(fileName)
                 .registerWriteHandler(styleStrategy)
                 .sheet("Student Scores")

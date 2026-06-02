@@ -152,7 +152,6 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
         File file = excelService.createExcelFile(list, analysisEntities, title);
         fileList.add(new FileInfoDTO(file.getName(), file.getAbsolutePath()));
         return FileDownloadUtil.downloadAll(file, fileList, request);
-//        return FileDownloadUtil.downZipFile(fileList, title, 1, request);
     }
 
 
