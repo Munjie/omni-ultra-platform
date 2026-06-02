@@ -44,8 +44,9 @@
     </appender>
 
     <!-- 4. 环境配置：生产环境只开启异步文件日志 -->
-    <springProfile name="prod">
+    <springProfile name="pro">
         <root level="INFO">
+            <appender-ref ref="CONSOLE" />
             <appender-ref ref="ASYNC_FILE" />
         </root>
     </springProfile>

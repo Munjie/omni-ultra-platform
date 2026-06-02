@@ -8,4 +8,4 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo 'Asia/Shangh
 
 EXPOSE 8090
 
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=pro"]
+ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=dev"]

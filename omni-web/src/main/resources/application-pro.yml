@@ -90,3 +90,7 @@ qq:
 
 acme:
   url: acme://letsencrypt.org
+
+zep:
+  base-url: http://124.223.164.197:8000/api/v1 # 如果和Java在同一台服务器，直接走127内网
+  token: "Bearer JCloudCyberMunjieSecretKey2026"
