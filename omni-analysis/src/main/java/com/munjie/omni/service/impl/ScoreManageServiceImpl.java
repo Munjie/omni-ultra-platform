@@ -75,13 +75,9 @@ public class ScoreManageServiceImpl implements ScoreManageService {
             maxAvgClass = Collections.max(geoAvg.entrySet(), Map.Entry.comparingByValue()).getKey();
             maxAvgScore = geoAvg.get(maxAvgClass);
         }
-
-
-        // 输出
         System.out.println("地理成绩总分最高的班级: " + maxSumClass + "，总分 = " + maxSumScore);
         System.out.println("地理成绩平均分最高的班级: " + maxAvgClass + "，平均分 = " + maxAvgScore);
-
-        // ① 地理 > 40 分人数最多的班级
+        //  地理 > 40 分人数最多的班级
         Map<String, Long> gt40Count = list.stream()
                 .filter(s -> s.getGeographyScore() != null && s.getGeographyScore() > 40)
                 .collect(Collectors.groupingBy(
@@ -92,8 +88,6 @@ public class ScoreManageServiceImpl implements ScoreManageService {
         String maxGt40Class = gt40Count.isEmpty()
                 ? null
                 : Collections.max(gt40Count.entrySet(), Map.Entry.comparingByValue()).getKey();
-
-
 // ② 地理 < 30 分人数最多的班级
         Map<String, Long> lt30Count = list.stream()
                 .filter(s -> s.getGeographyScore() != null && s.getGeographyScore() < 30)
@@ -105,16 +99,10 @@ public class ScoreManageServiceImpl implements ScoreManageService {
         String maxLt30Class = lt30Count.isEmpty()
                 ? null
                 : Collections.max(lt30Count.entrySet(), Map.Entry.comparingByValue()).getKey();
-
-
-// 输出
         System.out.println("40分以上人数最多的班级: " + maxGt40Class
                 + "，人数 = " + gt40Count.getOrDefault(maxGt40Class, 0L));
-
         System.out.println("30以下人数最多的班级: " + maxLt30Class
                 + "，人数 = " + lt30Count.getOrDefault(maxLt30Class, 0L));
-
-
         return HomeResVO.builder()
                 .maxGtClass(maxGt40Class)
                 .maxGt(gt40Count.getOrDefault(maxGt40Class, 0L))
