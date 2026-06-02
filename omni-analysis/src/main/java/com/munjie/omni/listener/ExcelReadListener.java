@@ -16,7 +16,6 @@ public class ExcelReadListener<T> extends AnalysisEventListener<T> {
 
     @Override
     public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
-        // 需要处理表头的可以在这里处理
         for (Integer key : headMap.keySet()) {
             System.out.print(key + ":" + headMap.get(key) + "\t");
         }

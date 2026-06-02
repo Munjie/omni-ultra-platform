@@ -17,8 +17,6 @@ public class EasyExcelStudentListener extends AnalysisEventListener<ScoreEntity>
 
     @Override
     public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
-
-        // 需要处理表头的可以在这里处理
         log.info(">>>> EasyExcel 实际解析到的表头 Map: {}", headMap);
         System.out.println();
     }

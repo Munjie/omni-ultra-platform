@@ -52,8 +52,6 @@ public class DynamicHeaderListener extends AnalysisEventListener<Map<Integer, St
     public void invoke(Map<Integer, String> data, AnalysisContext context) {
         // 数据行处理
         ScoreEntity dto = new ScoreEntity();
-
-        // 使用前面拼出来的索引取值
         if (fieldIndexMap.containsKey("studentNo")) {
             dto.setStudentId(data.get(fieldIndexMap.get("studentNo")));
         }

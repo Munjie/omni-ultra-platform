@@ -138,7 +138,6 @@ public class ExportService {
                 fillHeader(title, xinStyle, liShuStyle, heiTiStyle, weiWeiStyle, songTiBoldStyle, boldStyle, map, lightPoint, badPoint,lowScoreStudents);
             }
             File excelFile = PoiUtils.createExcelFile(workbook, title);
-            // 3. 最终完成
             currentTicks += weightFinalSave;
             int finalPercent = (currentTicks * 100) / totalTicks;
             updateProgress(exportJobId, finalPercent, "completed", excelFile.getAbsolutePath(), "成绩质量分析完成");
@@ -183,11 +182,10 @@ public class ExportService {
     }
 
     private static void fillHeader(String title,CellStyle xinStyle, CellStyle liShuStyle, CellStyle heiTiStyle, CellStyle weiWeiStyle, CellStyle songTiBoldStyle, CellStyle kaiTiStyle, Map<String, Object> map, String lightPoint,String badPoint, String lowScoreStudents) {
-        // 第1行
+
         Row row1 = sheet.createRow(0);
         mergeAndSetCell(sheet, row1, 0, 9, "南京一中明发滨江分校", liShuStyle);
 
-        // 第2行
         Row row2 = sheet.createRow(1);
         mergeAndSetCell(sheet,row2, 0, 9, title, heiTiStyle);
 
