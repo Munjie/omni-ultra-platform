@@ -70,8 +70,7 @@ public class ScoreAnalysisService {
                 maxWhisker = score;
             }
         }
-        
-        // 封装结果
+
         BoxPlotDataVO result = new BoxPlotDataVO();
         result.setClassName(className);
         result.setQ1(q1);
