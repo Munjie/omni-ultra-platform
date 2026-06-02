@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.munjie.omni.mapper.ArticleMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.munjie.omni.pojo.entity.ArticleEntity">
+        <id column="id" property="id" />
+        <result column="title" property="title" />
+        <result column="content" property="content" />
+        <result column="image" property="image" />
+        <result column="introduction" property="introduction" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, title, content, image, introduction, create_time, update_time, deleted
+    </sql>
+
+
+    <select id="checkArticleLike" resultType="int">
+        SELECT COUNT(*) FROM t_article_like
+        WHERE article_id = #{articleId} AND user_id = #{userId}
+    </select>
+
+    <insert id="insertArticleLike">
+        INSERT IGNORE INTO t_article_like (article_id, user_id)
+        VALUES (#{articleId}, #{userId})
+    </insert>
+
+    <delete id="deleteArticleLike">
+        DELETE FROM t_article_like
+        WHERE article_id = #{articleId} AND user_id = #{userId}
+    </delete>
+
+    <update id="updateArticleLikeCount">
+        UPDATE article
+        SET likes = likes + #{offset}
+        WHERE id = #{articleId}
+    </update>
+
+
+    <update id="updateViews">
+        update article set views = views + #{count} where id = #{articleId}
+    </update>
+
+</mapper>

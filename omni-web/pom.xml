@@ -34,6 +34,11 @@
             <artifactId>omni-analysis</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>munjie.com</groupId>
+            <artifactId>omni-blog</artifactId>
+        </dependency>
+
     </dependencies>
 
 

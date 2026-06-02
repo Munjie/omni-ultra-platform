@@ -13,6 +13,7 @@
         <module>omni-system</module>
         <module>omni-ai</module>
         <module>omni-analysis</module>
+        <module>omni-blog</module>
     </modules>
 
     <parent>
@@ -224,6 +225,13 @@
                 <artifactId>omni-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>munjie.com</groupId>
+                <artifactId>omni-blog</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
