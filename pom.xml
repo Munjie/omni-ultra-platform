@@ -14,6 +14,7 @@
         <module>omni-ai</module>
         <module>omni-analysis</module>
         <module>omni-blog</module>
+        <module>omni-certs</module>
     </modules>
 
     <parent>
@@ -231,6 +232,15 @@
                 <artifactId>omni-blog</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+
+            <dependency>
+                <groupId>munjie.com</groupId>
+                <artifactId>omni-certs</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+
 
         </dependencies>
     </dependencyManagement>

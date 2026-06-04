@@ -39,6 +39,11 @@
             <artifactId>omni-blog</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>munjie.com</groupId>
+            <artifactId>omni-certs</artifactId>
+        </dependency>
+
     </dependencies>
 
 
