@@ -7,18 +7,20 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.net.InternetDomainName;
 import com.munjie.omni.dto.CertChallengeDTO;
+import com.munjie.omni.dto.CertDetailDTO;
 import com.munjie.omni.exception.CustomException;
 import com.munjie.omni.pojo.dto.PageReq;
 import com.munjie.omni.pojo.entity.AcmeCertificateInfoEntity;
 import com.munjie.omni.service.AcmeCertificateInfoService;
 import com.munjie.omni.service.LetsManageService;
+import com.munjie.omni.utils.CertParseUtils;
 import com.munjie.omni.utils.DnsUtil;
 import com.munjie.omni.utils.KeyPairConvertUtil;
 import com.munjie.omni.vo.CertificateVO;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-
 import org.shredzone.acme4j.*;
 import org.shredzone.acme4j.challenge.Dns01Challenge;
 import org.shredzone.acme4j.toolbox.JSON;
@@ -65,16 +67,13 @@ public class LetsManageServiceImpl implements LetsManageService {
     @Resource
     private AcmeCertificateInfoService infoService;
 
+    @SneakyThrows
     @Override
-    public CertChallengeDTO getById(Long id) {
+    public CertDetailDTO getById(Long id) {
         AcmeCertificateInfoEntity entity = infoService.getById(id);
-        return CertChallengeDTO.builder()
-                .domain(entity.getDomain())
-                .hostRecord(entity.getHostRecord())
-                .recordValue(entity.getDnsTxtValue())
-                .status(entity.getStatus())
-                .errorMessage(entity.getErrorMessage())
-                .build();
+        CertDetailDTO details = CertParseUtils.parsePemCertificate(entity.getCertificateContent());
+        details.setStatus(entity.getStatus());
+        return details;
     }
 
     @Override

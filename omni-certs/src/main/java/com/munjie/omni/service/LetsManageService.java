@@ -2,6 +2,7 @@ package com.munjie.omni.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.munjie.omni.dto.CertChallengeDTO;
+import com.munjie.omni.dto.CertDetailDTO;
 import com.munjie.omni.pojo.dto.PageReq;
 import com.munjie.omni.pojo.entity.AcmeCertificateInfoEntity;
 import com.munjie.omni.vo.CertificateVO;
@@ -18,7 +19,7 @@ public interface LetsManageService {
 
 
     IPage<AcmeCertificateInfoEntity> pageLets(PageReq req);
-    CertChallengeDTO getById(Long id);
+    CertDetailDTO getById(Long id);
 
     String delete(Long id);
 

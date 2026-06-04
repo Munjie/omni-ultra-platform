@@ -2,6 +2,7 @@ package com.munjie.omni.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.munjie.omni.dto.CertChallengeDTO;
+import com.munjie.omni.dto.CertDetailDTO;
 import com.munjie.omni.dto.DomainDTO;
 import com.munjie.omni.pojo.dto.ExportLetsDTO;
 import com.munjie.omni.pojo.dto.PageReq;
@@ -33,10 +34,11 @@ public class LetsManageController {
 
     @Operation(summary ="详细信息")
     @GetMapping("/get/{id}")
-    public CertChallengeDTO getById(@PathVariable("id") Long id) {
+    public CertDetailDTO getById(@PathVariable("id") Long id) {
         return  letsManageService.getById(id);
-
     }
+
+
 
     @Operation(summary ="DNS生效检测")
     @GetMapping("/check-dns/{id}")
