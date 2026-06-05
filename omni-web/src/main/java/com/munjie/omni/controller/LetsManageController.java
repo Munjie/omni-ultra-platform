@@ -374,19 +374,12 @@ public class LetsManageController {
                             "    os.makedirs(os.path.dirname(sys.argv[3]), exist_ok=True)\n" +
                             "    with open(sys.argv[2], 'w', encoding='utf-8') as f: f.write(data['certificate'])\n" +
                             "    with open(sys.argv[3], 'w', encoding='utf-8') as f: f.write(data['privateKey'])\n" +
-                            "    print('[Success] 界云证书与私钥已无损同步分发至本地。')\n" +
+                            "    print('[Success] 证书与私钥已无损同步分发至本地。')\n" +
                             "except Exception as e:\n" +
-                            "    print('[Error] 同步内核严重异常:', str(e))\n" +
+                            "    print('[Error] 同步内核异常:', str(e))\n" +
                             "    sys.exit(1)\n";
-
-
             String base64Python = java.util.Base64.getEncoder().encodeToString(pythonCode.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
-
             shellContent = "#!/bin/bash\n" +
-                    "# ==================================================================\n" +
-                    "#   界云 (JCloud) SSL 自动化中心 - 混编同步客户端 (V4.0-Base64-Stable)\n" +
-                    "# ==================================================================\n\n" +
                     "TOKEN=\"\"\nCERT_PATH=\"\"\nKEY_PATH=\"\"\nRELOAD_CMD=\"\"\n\n" +
                     "while [ $# -gt 0 ]; do\n" +
                     "  case \"$1\" in\n" +
@@ -399,11 +392,23 @@ public class LetsManageController {
                     "done\n\n" +
                     "echo \"[JCloud] 环境预检...\"\n" +
                     "if ! command -v python3 &> /dev/null; then\n" +
+                    "    echo \"检测到当前服务器缺失 python3 环境，正在尝试自动构建轻量级依赖...\"\n" +
+                    "    \n" +
+                    "    # 检测包管理器\n" +
+                    "    if command -v apt-get &> /dev/null; then\n" +
+                    "        sudo apt-get update -y && sudo apt-get install -y python3\n" +
+                    "    elif command -v yum &> /dev/null; then\n" +
+                    "        sudo yum install -y python3\n" +
+                    "    else\n" +
+                    "        echo \"[Error] 无法自动为您安装 python3 (未找到常见的包管理器)，请手动执行安装python3环境后重新运行此脚本。\"\n" +
+                    "        exit 1\n" +
+                    "    fi\n" +
+                    "fi" +
+                    "if ! command -v python3 &> /dev/null; then\n" +
                     "    echo \"[Error] 本机缺失 python3 环境，同步核心无法运行。\"\n" +
                     "    exit 1\n" +
                     "fi\n\n" +
-                    "echo \"[JCloud] 正在连接界云安全中枢...\"\n" +
-                    "# 动态释放并无损执行核心代码\n" +
+                    "echo \"[JCloud] 正在连接...\"\n" +
                     "echo \"" + base64Python + "\" | base64 -d | python3 - \"$TOKEN\" \"$CERT_PATH\" \"$KEY_PATH\"\n\n" +
                     "if [ $? -ne 0 ]; then\n" +
                     "    echo \"[Error] 同步核心执行失败，熔断后续重载。\"\n" +
@@ -413,9 +418,7 @@ public class LetsManageController {
                     "    echo \"正在执行本地重载指令: $RELOAD_CMD\"\n" +
                     "    eval \"$RELOAD_CMD\"\n" +
                     "fi\n" +
-                    "echo \"[Success] 界云自动化任务圆满结束。\"\n";
-
-
+                    "echo \"[Success] 任务结束。\"\n";
         }
 
         response.getWriter().write(shellContent);
