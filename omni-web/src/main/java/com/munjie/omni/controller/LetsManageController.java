@@ -181,7 +181,7 @@ public class LetsManageController {
         if (info == null || !"VALID".equals(info.getStatus())) {
             response.getWriter().write("无效token或者证书未生效");
         } else {
-           String shell = "#!/bin/bash\n" +
+            String shell = "#!/bin/bash\n" +
                     "TOKEN=\"\"\nCERT_PATH=\"\"\nKEY_PATH=\"\"\nRELOAD_CMD=\"\"\n\n" +
                     "while [ $# -gt 0 ]; do\n" +
                     "  case \"$1\" in\n" +
@@ -286,6 +286,74 @@ public class LetsManageController {
                     "    eval \"$RELOAD_CMD\"\n" +
                     "fi\n" +
                     "echo \"[Success] 本轮自动化同步部署任务结束。\"\n";
+
+
+            shellContent = "#!/bin/bash\n" +
+                    "TOKEN=\"\"\nCERT_PATH=\"\"\nKEY_PATH=\"\"\nRELOAD_CMD=\"\"\n\n" +
+                    "while [ $# -gt 0 ]; do\n" +
+                    "  case \"$1\" in\n" +
+                    "    -token=*) TOKEN=\"${1#*=}\" ;;\n" +
+                    "    -cert_path=*) CERT_PATH=\"${1#*=}\" ;;\n" +
+                    "    -key_path=*) KEY_PATH=\"${1#*=}\" ;;\n" +
+                    "    -command=*) RELOAD_CMD=\"${1#*=}\" ;;\n" +
+                    "  esac\n" +
+                    "  shift\n" +
+                    "done\n\n" +
+                    "echo \"[JCloud] 环境预检...\"\n\n" +
+                    "if ! command -v python3 &> /dev/null; then\n" +
+                    "    echo \"检测到当前服务器缺失 python3 环境，正在尝试自动构建轻量级依赖...\"\n" +
+                    "    \n" +
+                    "    # 检测包管理器\n" +
+                    "    if command -v apt-get &> /dev/null; then\n" +
+                    "        sudo apt-get update -y && sudo apt-get install -y python3\n" +
+                    "    elif command -v yum &> /dev/null; then\n" +
+                    "        sudo yum install -y python3\n" +
+                    "    else\n" +
+                    "        echo \"[Error] 无法自动为您安装 python3 (未找到常见的包管理器)，请手动执行安装python3环境后重新运行此脚本。\"\n" +
+                    "        exit 1\n" +
+                    "    fi\n" +
+                    "fi" +
+                    "# 将核心下载和无损 JSON 提取逻辑全部内聚给 Python，避免 Bash 的变量长度和换行符限制\n" +
+                    "python3 -c \"\n" +
+                    "import sys, json, os\n" +
+                    "import urllib.request\n" +
+                    "try:\n" +
+                    "    url = 'https://www.munjie.com/api/lets/download-latest/' + '$TOKEN'\n" +
+                    "    req = urllib.request.Request(url, headers={'User-Agent': 'JCloud-Client/3.0'})\n" +
+                    "    with urllib.request.urlopen(req) as response:\n" +
+                    "        html = response.read().decode('utf-8')\n" +
+                    "    \n" +
+                    "    obj = json.loads(html)\n" +
+                    "    if obj.get('code') != 200:\n" +
+                    "        print('[Error] 平台业务逻辑拦截:', obj.get('message')); sys.exit(1)\n" +
+                    "        \n" +
+                    "    data = obj.get('data', {})\n" +
+                    "    if not data or 'certificate' not in data:\n" +
+                    "        print('[Error] 证书数据中枢内无有效凭证'); sys.exit(1)\n" +
+                    "        \n" +
+                    "    # 无损建立目标本地拓扑目录\n" +
+                    "    os.makedirs(os.path.dirname('$CERT_PATH'), exist_ok=True)\n" +
+                    "    os.makedirs(os.path.dirname('$KEY_PATH'), exist_ok=True)\n" +
+                    "    \n" +
+                    "    # 写入证书和私钥（完美保留工业级换行规范）\n" +
+                    "    with open('$CERT_PATH', 'w', encoding='utf-8') as f: f.write(data['certificate'])\n" +
+                    "    with open('$KEY_PATH', 'w', encoding='utf-8') as f: f.write(data['privateKey'])\n" +
+                    "    print('[Success] 证书与私钥已无损同步分发至本地指定目录。')\n" +
+                    "except Exception as e:\n" +
+                    "    print('[Error] 界云同步内核发生严重异常:', str(e))\n" +
+                    "    sys.exit(1)\n" +
+                    "\"\n\n" +
+                    "# 检查 Python 层的退出状态码\n" +
+                    "if [ $? -ne 0 ]; then\n" +
+                    "    echo \"[Error] 同步核心已熔断，终止后续重载步骤。\"\n" +
+                    "    exit 1\n" +
+                    "fi\n\n" +
+                    "# 触发本地重载指令\n" +
+                    "if [ -n \"$RELOAD_CMD\" ]; then\n" +
+                    "    echo \"正在执行本地重载指令: $RELOAD_CMD\"\n" +
+                    "    eval \"$RELOAD_CMD\"\n" +
+                    "fi\n" +
+                    "echo \"[Success] 本轮自动化部署任务结束。\"\n";
 
 
         }
