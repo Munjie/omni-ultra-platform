@@ -392,20 +392,7 @@ public class LetsManageController {
                     "done\n\n" +
                     "echo \"[JCloud] 环境预检...\"\n" +
                     "if ! command -v python3 &> /dev/null; then\n" +
-                    "    echo \"检测到当前服务器缺失 python3 环境，正在尝试自动构建轻量级依赖...\"\n" +
-                    "    \n" +
-                    "    # 检测包管理器\n" +
-                    "    if command -v apt-get &> /dev/null; then\n" +
-                    "        sudo apt-get update -y && sudo apt-get install -y python3\n" +
-                    "    elif command -v yum &> /dev/null; then\n" +
-                    "        sudo yum install -y python3\n" +
-                    "    else\n" +
-                    "        echo \"[Error] 无法自动为您安装 python3 (未找到常见的包管理器)，请手动执行安装python3环境后重新运行此脚本。\"\n" +
-                    "        exit 1\n" +
-                    "    fi\n" +
-                    "fi" +
-                    "if ! command -v python3 &> /dev/null; then\n" +
-                    "    echo \"[Error] 本机缺失 python3 环境，同步核心无法运行。\"\n" +
+                    "    echo \"[Error] 本机缺失 python3 环境，同步核心无法运行,请先手动安装 python3。\"\n" +
                     "    exit 1\n" +
                     "fi\n\n" +
                     "echo \"[JCloud] 正在连接...\"\n" +
