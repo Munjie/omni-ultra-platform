@@ -198,6 +198,19 @@ public class LetsManageController {
                     "    echo \"[Error] 证书提取失败：凭证不正确或证书尚未验证成功\"\n" +
                     "    exit 1\n" +
                     "fi\n\n" +
+                    "if ! command -v python3 &> /dev/null; then\n" +
+                    "    echo \"[JCloud] 检测到当前服务器缺失 python3 环境，正在尝试自动构建轻量级依赖...\"\n" +
+                    "    \n" +
+                    "    # 检测包管理器\n" +
+                    "    if command -v apt-get &> /dev/null; then\n" +
+                    "        sudo apt-get update -y && sudo apt-get install -y python3\n" +
+                    "    elif command -v yum &> /dev/null; then\n" +
+                    "        sudo yum install -y python3\n" +
+                    "    else\n" +
+                    "        echo \"[Error] 无法自动为您安装 python3 (未找到常见的包管理器)，请手动执行安装python3环境后重新运行此脚本。\"\n" +
+                    "        exit 1\n" +
+                    "    fi\n" +
+                    "fi"+
                     "PRIVATE_KEY=$(echo \"$RESPONSE\" | python3 -c \"import sys, json; print(json.load(sys.stdin)['privateKey'])\")\n" +
                     "CERTIFICATE=$(echo \"$RESPONSE\" | python3 -c \"import sys, json; print(json.load(sys.stdin)['certificate'])\")\n\n" +
                     "mkdir -p $(dirname \"$CERT_PATH\")\n" +
