@@ -356,6 +356,66 @@ public class LetsManageController {
                     "echo \"[Success] 本轮自动化部署任务结束。\"\n";
 
 
+            String pythonCode =
+                    "import sys, json, os\n" +
+                            "import urllib.request\n" +
+                            "try:\n" +
+                            "    url = 'https://www.munjie.com/api/lets/download-latest/' + sys.argv[1]\n" +
+                            "    req = urllib.request.Request(url, headers={'User-Agent': 'JCloud-Client/3.0'})\n" +
+                            "    with urllib.request.urlopen(req) as response:\n" +
+                            "        html = response.read().decode('utf-8')\n" +
+                            "    obj = json.loads(html)\n" +
+                            "    if obj.get('code') != 200:\n" +
+                            "        print('[Error] 平台逻辑拦截:', obj.get('message')); sys.exit(1)\n" +
+                            "    data = obj.get('data', {})\n" +
+                            "    if not data or 'certificate' not in data:\n" +
+                            "        print('[Error] 证书中心无有效凭证'); sys.exit(1)\n" +
+                            "    os.makedirs(os.path.dirname(sys.argv[2]), exist_ok=True)\n" +
+                            "    os.makedirs(os.path.dirname(sys.argv[3]), exist_ok=True)\n" +
+                            "    with open(sys.argv[2], 'w', encoding='utf-8') as f: f.write(data['certificate'])\n" +
+                            "    with open(sys.argv[3], 'w', encoding='utf-8') as f: f.write(data['privateKey'])\n" +
+                            "    print('[Success] 界云证书与私钥已无损同步分发至本地。')\n" +
+                            "except Exception as e:\n" +
+                            "    print('[Error] 同步内核严重异常:', str(e))\n" +
+                            "    sys.exit(1)\n";
+
+
+            String base64Python = java.util.Base64.getEncoder().encodeToString(pythonCode.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+
+            shellContent = "#!/bin/bash\n" +
+                    "# ==================================================================\n" +
+                    "#   界云 (JCloud) SSL 自动化中心 - 混编同步客户端 (V4.0-Base64-Stable)\n" +
+                    "# ==================================================================\n\n" +
+                    "TOKEN=\"\"\nCERT_PATH=\"\"\nKEY_PATH=\"\"\nRELOAD_CMD=\"\"\n\n" +
+                    "while [ $# -gt 0 ]; do\n" +
+                    "  case \"$1\" in\n" +
+                    "    -token=*) TOKEN=\"${1#*=}\" ;;\n" +
+                    "    -cert_path=*) CERT_PATH=\"${1#*=}\" ;;\n" +
+                    "    -key_path=*) KEY_PATH=\"${1#*=}\" ;;\n" +
+                    "    -command=*) RELOAD_CMD=\"${1#*=}\" ;;\n" +
+                    "  esac\n" +
+                    "  shift\n" +
+                    "done\n\n" +
+                    "echo \"[JCloud] 环境预检...\"\n" +
+                    "if ! command -v python3 &> /dev/null; then\n" +
+                    "    echo \"[Error] 本机缺失 python3 环境，同步核心无法运行。\"\n" +
+                    "    exit 1\n" +
+                    "fi\n\n" +
+                    "echo \"[JCloud] 正在连接界云安全中枢...\"\n" +
+                    "# 动态释放并无损执行核心代码\n" +
+                    "echo \"" + base64Python + "\" | base64 -d | python3 - \"$TOKEN\" \"$CERT_PATH\" \"$KEY_PATH\"\n\n" +
+                    "if [ $? -ne 0 ]; then\n" +
+                    "    echo \"[Error] 同步核心执行失败，熔断后续重载。\"\n" +
+                    "    exit 1\n" +
+                    "fi\n\n" +
+                    "if [ -n \"$RELOAD_CMD\" ]; then\n" +
+                    "    echo \"正在执行本地重载指令: $RELOAD_CMD\"\n" +
+                    "    eval \"$RELOAD_CMD\"\n" +
+                    "fi\n" +
+                    "echo \"[Success] 界云自动化任务圆满结束。\"\n";
+
+
         }
 
         response.getWriter().write(shellContent);
