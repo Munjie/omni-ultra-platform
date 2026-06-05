@@ -40,37 +40,36 @@ public class LetsManageController {
     @Resource
     private AcmeCertificateInfoService infoService;
 
-    @Operation(summary ="详细信息")
+    @Operation(summary = "详细信息")
     @GetMapping("/get/{id}")
     public CertDetailDTO getById(@PathVariable("id") Long id) {
-        return  letsManageService.getById(id);
+        return letsManageService.getById(id);
     }
 
 
-
-    @Operation(summary ="DNS生效检测")
+    @Operation(summary = "DNS生效检测")
     @GetMapping("/check-dns/{id}")
     public Boolean checkDns(@PathVariable("id") Long id) {
-        return  letsManageService.checkDns(id);
+        return letsManageService.checkDns(id);
 
     }
 
-    @Operation(summary ="提交申请")
+    @Operation(summary = "提交申请")
     @GetMapping("/confirm/{id}")
     public String confirm(@PathVariable("id") Long id) throws Exception {
-          letsManageService.verifyAndIssue(id);
-          return "证书签发任务已启动";
+        letsManageService.verifyAndIssue(id);
+        return "证书签发任务已启动";
 
     }
 
     @GetMapping("/list")
-    @Operation(summary ="查询")
+    @Operation(summary = "查询")
     public List<CertificateVO> list() {
         return letsManageService.list();
     }
 
     @PostMapping("/create")
-    @Operation(summary ="申请")
+    @Operation(summary = "申请")
     public CertChallengeDTO createOrder(@RequestBody @Validated DomainDTO domain) throws Exception {
         return letsManageService.createOrder(domain.getDomain());
 
@@ -78,25 +77,21 @@ public class LetsManageController {
 
 
     @PostMapping("/page-lets")
-    @Operation(summary ="分页查询")
+    @Operation(summary = "分页查询")
     public IPage<AcmeCertificateInfoEntity> pageLets(@RequestBody PageReq req) {
         return letsManageService.pageLets(req);
     }
 
-    @DeleteMapping(value="/delete")
+    @DeleteMapping(value = "/delete")
     public String delete(@RequestParam("id") Long id) {
-        return  letsManageService.delete(id);
+        return letsManageService.delete(id);
     }
 
 
-
-
-
-
     @PostMapping("/download")
-    @Operation(summary ="下载证书")
+    @Operation(summary = "下载证书")
     public ResponseEntity<byte[]> download(HttpServletRequest request, @RequestBody ExportLetsDTO req) throws Exception {
-      return  letsManageService.download(req.getId());
+        return letsManageService.download(req.getId());
 
     }
 
@@ -175,58 +170,54 @@ public class LetsManageController {
         return responseData;
     }
 
-    /**
-     * 2. 开放免白名单接口：给 Linux 客户端使用的专属通用 Shell 脚本下发点
-     *
-     */
     @GetMapping("/shell/{token}")
-    public String downloadShellScript(@PathVariable("token") String token) {
+    public void downloadShellScript(@PathVariable("token") String token, jakarta.servlet.http.HttpServletResponse response) throws Exception {
         System.out.println("token = " + token);
-        return "#!/bin/bash\n" +
-                "TOKEN=\"\"\nCERT_PATH=\"\"\nKEY_PATH=\"\"\nRELOAD_CMD=\"\"\n\n" +
-                "while [ $# -gt 0 ]; do\n" +
-                "  case \"$1\" in\n" +
-                "    -token=*) TOKEN=\"${1#*=}\" ;;\n" +
-                "    -cert_path=*) CERT_PATH=\"${1#*=}\" ;;\n" +
-                "    -key_path=*) KEY_PATH=\"${1#*=}\" ;;\n" +
-                "    -command=*) RELOAD_CMD=\"${1#*=}\" ;;\n" +
-                "  esac\n" +
-                "  shift\n" +
-                "done\n\n" +
-                "echo \"[JCloud] 正在连接...\"\n" +
-                "RESPONSE=$(curl -sL \"https://www.munjie.com/api/lets/download-latest/${TOKEN}\")\n\n" +
-                "if [[ $RESPONSE != *\"BEGIN CERTIFICATE\"* ]]; then\n" +
-                "    echo \"[Error] 证书提取失败：凭证不正确或证书尚未验证成功\"\n" +
-                "    exit 1\n" +
-                "fi\n\n" +
-                "PRIVATE_KEY=$(echo \"$RESPONSE\" | python3 -c \"import sys, json; print(json.load(sys.stdin)['privateKey'])\")\n" +
-                "CERTIFICATE=$(echo \"$RESPONSE\" | python3 -c \"import sys, json; print(json.load(sys.stdin)['certificate'])\")\n\n" +
-                "mkdir -p $(dirname \"$CERT_PATH\")\n" +
-                "mkdir -p $(dirname \"$KEY_PATH\")\n\n" +
-                "# 备份机制\n" +
-                "DATE_STR=$(date +%Y%m%d%H%M%S)\n" +
-                "[ -f \"$CERT_PATH\" ] && cp \"$CERT_PATH\" \"${CERT_PATH}.backup_${DATE_STR}\"\n" +
-                "[ -f \"$KEY_PATH\" ] && cp \"$KEY_PATH\" \"${KEY_PATH}.backup_${DATE_STR}\"\n\n" +
-                "echo \"$PRIVATE_KEY\" > \"$KEY_PATH\"\n" +
-                "echo \"$CERTIFICATE\" > \"$CERT_PATH\"\n\n" +
-                "echo \"[Success] 证书写入完毕，准备重载Web服务...\"\n" +
-                "if [ -n \"$RELOAD_CMD\" ]; then\n" +
-                "    eval \"$RELOAD_CMD\"\n" +
-                "fi\n" +
-                "echo \"[Success] 本轮自动化同步部署任务结束。\"\n";
+        AcmeCertificateInfoEntity info = infoService.getOne(
+                new LambdaQueryWrapper<AcmeCertificateInfoEntity>().eq(AcmeCertificateInfoEntity::getSyncToken, token)
+        );
+        String shellContent = "";
+        response.setContentType("text/plain;charset=UTF-8");
+        if (info == null || !"VALID".equals(info.getStatus())) {
+            response.getWriter().write("无效token或者证书未生效");
+        } else {
+            shellContent = "#!/bin/bash\n" +
+                    "TOKEN=\"\"\nCERT_PATH=\"\"\nKEY_PATH=\"\"\nRELOAD_CMD=\"\"\n\n" +
+                    "while [ $# -gt 0 ]; do\n" +
+                    "  case \"$1\" in\n" +
+                    "    -token=*) TOKEN=\"${1#*=}\" ;;\n" +
+                    "    -cert_path=*) CERT_PATH=\"${1#*=}\" ;;\n" +
+                    "    -key_path=*) KEY_PATH=\"${1#*=}\" ;;\n" +
+                    "    -command=*) RELOAD_CMD=\"${1#*=}\" ;;\n" +
+                    "  esac\n" +
+                    "  shift\n" +
+                    "done\n\n" +
+                    "echo \"[JCloud] 正在连接...\"\n" +
+                    "RESPONSE=$(curl -sL \"https://www.munjie.com/api/lets/download-latest/${TOKEN}\")\n\n" +
+                    "if [[ $RESPONSE != *\"BEGIN CERTIFICATE\"* ]]; then\n" +
+                    "    echo \"[Error] 证书提取失败：凭证不正确或证书尚未验证成功\"\n" +
+                    "    exit 1\n" +
+                    "fi\n\n" +
+                    "PRIVATE_KEY=$(echo \"$RESPONSE\" | python3 -c \"import sys, json; print(json.load(sys.stdin)['privateKey'])\")\n" +
+                    "CERTIFICATE=$(echo \"$RESPONSE\" | python3 -c \"import sys, json; print(json.load(sys.stdin)['certificate'])\")\n\n" +
+                    "mkdir -p $(dirname \"$CERT_PATH\")\n" +
+                    "mkdir -p $(dirname \"$KEY_PATH\")\n\n" +
+                    "# 备份机制\n" +
+                    "DATE_STR=$(date +%Y%m%d%H%M%S)\n" +
+                    "[ -f \"$CERT_PATH\" ] && cp \"$CERT_PATH\" \"${CERT_PATH}.backup_${DATE_STR}\"\n" +
+                    "[ -f \"$KEY_PATH\" ] && cp \"$KEY_PATH\" \"${KEY_PATH}.backup_${DATE_STR}\"\n\n" +
+                    "echo \"$PRIVATE_KEY\" > \"$KEY_PATH\"\n" +
+                    "echo \"$CERTIFICATE\" > \"$CERT_PATH\"\n\n" +
+                    "echo \"[Success] 证书写入完毕，准备重载Web服务...\"\n" +
+                    "if [ -n \"$RELOAD_CMD\" ]; then\n" +
+                    "    eval \"$RELOAD_CMD\"\n" +
+                    "fi\n" +
+                    "echo \"[Success] 本轮自动化同步部署任务结束。\"\n";
+
+        }
+        response.getWriter().write(shellContent);
+        response.getWriter().flush();
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }
