@@ -1,6 +1,9 @@
 package com.munjie.omni.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,7 +16,7 @@ import java.util.Date;
  * </p>
  *
  * @author mwj
- * @since 2026-05-06
+ * @since 2026-06-05
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -107,25 +110,58 @@ public class AcmeCertificateInfoEntity implements Serializable {
     private String recordValue;
 
     /**
+     * 证书过期时间
+     */
+    @TableField("expiry_date")
+    private Date expiryDate;
+
+    /**
      * 证书签发时间
      */
     @TableField("issue_date")
     private Date issueDate;
 
     /**
-     * 证书过期时间
+     * 错误信息
      */
-    @TableField("expiry_date")
-    private Date expiryDate;
-
-
     @TableField("error_message")
     private String errorMessage;
 
-    @TableField(value = "create_by_id",fill = FieldFill.INSERT)
+    @TableField("create_by_id")
     private Integer createById;
 
-    @TableField(value = "update_by_id",fill = FieldFill.INSERT_UPDATE)
+    @TableField("update_by_id")
     private Integer updateById;
+
+    /**
+     * 专属同步部署Token
+     */
+    @TableField("sync_token")
+    private String syncToken;
+
+    @TableField("deploy_server_type")
+    private String deployServerType;
+
+    @TableField("deploy_cert_path")
+    private String deployCertPath;
+
+    @TableField("deploy_key_path")
+    private String deployKeyPath;
+
+    @TableField("deploy_reload_cmd")
+    private String deployReloadCmd;
+
+    /**
+     * 是否开启自动续期：0-关闭，1-开启
+     */
+    @TableField("auto_renew")
+    private Boolean autoRenew;
+
+    /**
+     * 最近一次续期状态：RENEWING, SUCCESS, FAILED
+     */
+    @TableField("renew_status")
+    private String renewStatus;
+
 
 }

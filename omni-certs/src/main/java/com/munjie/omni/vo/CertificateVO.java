@@ -16,4 +16,6 @@ public class CertificateVO {
     private String issuer;
     private String expiryDate;
     private Boolean isWildcard;
+    private Integer autoRenew;    // 0: 关闭, 1: 开启
+    private String renewStatus;
 }

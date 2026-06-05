@@ -44,12 +44,15 @@ public class CertParseUtils {
         List<String> ocspUrls = getAiaUrls(cert, X509ObjectIdentifiers.id_ad_ocsp);
         List<String> caUrls = getAiaUrls(cert, X509ObjectIdentifiers.id_ad_caIssuers);
 
-        dto.setOcspUrl(!ocspUrls.isEmpty() ? ocspUrls.get(0) : "-");
+
         dto.setCaUrl(!caUrls.isEmpty() ? caUrls.get(0) : "-");
 
         // 2. 提取 CRL 吊销列表 URL
         List<String> crlUrls = getCrlDistributionPoints(cert);
         dto.setCrlUrl(!crlUrls.isEmpty() ? crlUrls.get(0) : "-");
+
+        dto.setOcspUrl(!ocspUrls.isEmpty() ? ocspUrls.get(0) : "CA 未启用 (Let's Encrypt 默认不再提供)");
+
 
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
