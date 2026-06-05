@@ -181,7 +181,7 @@ public class LetsManageController {
         if (info == null || !"VALID".equals(info.getStatus())) {
             response.getWriter().write("无效token或者证书未生效");
         } else {
-            shellContent = "#!/bin/bash\n" +
+           String shell = "#!/bin/bash\n" +
                     "TOKEN=\"\"\nCERT_PATH=\"\"\nKEY_PATH=\"\"\nRELOAD_CMD=\"\"\n\n" +
                     "while [ $# -gt 0 ]; do\n" +
                     "  case \"$1\" in\n" +
@@ -210,7 +210,7 @@ public class LetsManageController {
                     "        echo \"[Error] 无法自动为您安装 python3 (未找到常见的包管理器)，请手动执行安装python3环境后重新运行此脚本。\"\n" +
                     "        exit 1\n" +
                     "    fi\n" +
-                    "fi"+
+                    "fi" +
                     "PRIVATE_KEY=$(echo \"$RESPONSE\" | python3 -c \"import sys, json; print(json.load(sys.stdin)['privateKey'])\")\n" +
                     "CERTIFICATE=$(echo \"$RESPONSE\" | python3 -c \"import sys, json; print(json.load(sys.stdin)['certificate'])\")\n\n" +
                     "mkdir -p $(dirname \"$CERT_PATH\")\n" +
@@ -227,7 +227,69 @@ public class LetsManageController {
                     "fi\n" +
                     "echo \"[Success] 本轮自动化同步部署任务结束。\"\n";
 
+
+            shellContent = "#!/bin/bash\n" +
+                    "TOKEN=\"\"\nCERT_PATH=\"\"\nKEY_PATH=\"\"\nRELOAD_CMD=\"\"\n\n" +
+                    "while [ $# -gt 0 ]; do\n" +
+                    "  case \"$1\" in\n" +
+                    "    -token=*) TOKEN=\"${1#*=}\" ;;\n" +
+                    "    -cert_path=*) CERT_PATH=\"${1#*=}\" ;;\n" +
+                    "    -key_path=*) KEY_PATH=\"${1#*=}\" ;;\n" +
+                    "    -command=*) RELOAD_CMD=\"${1#*=}\" ;;\n" +
+                    "  esac\n" +
+                    "  shift\n" +
+                    "done\n\n" +
+                    "echo \"正在连接...\"\n" +
+                    "#  获取证书数据\n" +
+                    "RESPONSE=$(curl -sL \"https://www.munjie.com/api/lets/download-latest/${TOKEN}\")\n\n" +
+                    "if [ -z \"$RESPONSE\" ]; then\n" +
+                    "    echo \"[Error] 无法连接服务器，网络通信故障。\"\n" +
+                    "    exit 1\n" +
+                    "fi\n\n" +
+                    "if ! command -v python3 &> /dev/null; then\n" +
+                    "    echo \"检测到当前服务器缺失 python3 环境，正在尝试自动构建轻量级依赖...\"\n" +
+                    "    \n" +
+                    "    # 检测包管理器\n" +
+                    "    if command -v apt-get &> /dev/null; then\n" +
+                    "        sudo apt-get update -y && sudo apt-get install -y python3\n" +
+                    "    elif command -v yum &> /dev/null; then\n" +
+                    "        sudo yum install -y python3\n" +
+                    "    else\n" +
+                    "        echo \"[Error] 无法自动为您安装 python3 (未找到常见的包管理器)，请手动执行安装python3环境后重新运行此脚本。\"\n" +
+                    "        exit 1\n" +
+                    "    fi\n" +
+                    "fi" +
+                    "# 解析写入文件\n" +
+                    "python3 -c \"\n" +
+                    "import sys, json, os\n" +
+                    "try:\n" +
+                    "    obj = json.loads('''$RESPONSE''')\n" +
+                    "    if obj.get('code') != 200:\n" +
+                    "        print('[Error] 返回状态码异常'); sys.exit(1)\n" +
+                    "    data = obj.get('data', {})\n" +
+                    "    \n" +
+                    "    # 创建本地存放目录\n" +
+                    "    os.makedirs(os.path.dirname('$CERT_PATH'), exist_ok=True)\n" +
+                    "    os.makedirs(os.path.dirname('$KEY_PATH'), exist_ok=True)\n" +
+                    "    \n" +
+                    "    # 写入私钥和证书\n" +
+                    "    with open('$CERT_PATH', 'w') as f: f.write(data['certificate'])\n" +
+                    "    with open('$KEY_PATH', 'w') as f: f.write(data['privateKey'])\n" +
+                    "    print('[Success] 证书与私钥已无损同步分发至本地指定目录。')\n" +
+                    "except Exception as e:\n" +
+                    "    print('[Error] 脚本解析数据发生严重异常:', str(e))\n" +
+                    "    sys.exit(1)\n" +
+                    "\" || exit 1\n\n" +
+                    "# 3. 触发重载\n" +
+                    "if [ -n \"$RELOAD_CMD\" ]; then\n" +
+                    "    echo \"正在执行重载指令: $RELOAD_CMD\"\n" +
+                    "    eval \"$RELOAD_CMD\"\n" +
+                    "fi\n" +
+                    "echo \"[Success] 本轮自动化同步部署任务结束。\"\n";
+
+
         }
+
         response.getWriter().write(shellContent);
         response.getWriter().flush();
     }
