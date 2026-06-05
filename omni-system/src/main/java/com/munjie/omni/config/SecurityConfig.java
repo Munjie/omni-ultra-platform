@@ -60,7 +60,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-ui/**", "/favicon.ico", "/**/*.json", "/**/*.ico").permitAll()
                         .requestMatchers("/auth/**","/ws/**","/system/auth/qq").permitAll()
-                        .requestMatchers("/lets/download-latest","/lets/shell").permitAll()
+                        .requestMatchers("/download-latest","/shell").permitAll()
                         .requestMatchers("/chat/**","/article/**", "/completions/**", "/upload/**", "/.well-known/**").permitAll()
                         .requestMatchers("/create-score-task", "/export-report", "/download/**", "/appspecific").permitAll()
                         .anyRequest().authenticated()

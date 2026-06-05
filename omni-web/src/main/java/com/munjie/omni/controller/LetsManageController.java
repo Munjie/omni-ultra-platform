@@ -161,7 +161,7 @@ public class LetsManageController {
 
         String rawToken = info.getSyncToken();
         String installCmd = String.format(
-                "curl -sSO https://www.munjie.com/api/lets/shell?token=%s && " +
+                "curl -sSO https://www.munjie.com/api/lets/shell/%s && " +
                         "chmod +x jcloud-ssl-sync.sh && " +
                         "(crontab -l 2>/dev/null; echo \"30 2 10,25 * * /bin/bash $(pwd)/jcloud-ssl-sync.sh -token=%s -cert_path=%s -key_path=%s -command=\\\"%s\\\" >> ./jcloud-cron.log 2>&1\") | crontab - && " +
                         "./jcloud-ssl-sync.sh -token=%s -cert_path=%s -key_path=%s -command=\"%s\"",
